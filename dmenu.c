@@ -47,6 +47,7 @@ static struct item *items = NULL;
 static struct item *matches, *matchend;
 static struct item *prev, *curr, *next, *sel;
 static int mon = -1, screen;
+static int TabCount=0;
 
 static Atom clip, utf8;
 static Display *dpy;
@@ -355,6 +356,7 @@ match(void)
 static void
 insert(const char *str, ssize_t n)
 {
+    TabCount = 0;
     if (strlen(text) + n > sizeof text - 1)
         return;
     /* move existing text out of the way, insert new text, and update cursor */
@@ -586,18 +588,28 @@ insert:
         /* fallthrough */
 
     case XK_Tab:
-        if (sel && sel->right && (sel = sel->right) == next) {
-            curr = next;
-            calcoffsets();
+        if (TabCount) {
+            if (!sel)
+                return;
+            if (sel && sel->right && (sel = sel->right) == next) {
+                curr = next;
+                calcoffsets();
+            }
+            strncpy(text, sel->text, sizeof text - 1);
+            text[sizeof text - 1] = '\0';
+            cursor = strlen(text);
+            break;
+            }
+        else {
+            if (!sel)
+                return;
+            strncpy(text, sel->text, sizeof text - 1);
+            text[sizeof text - 1] = '\0';
+            cursor = strlen(text);
+            TabCount = TabCount + 1;
+            break;
         }
-        if (!sel)
-            return;
-        strncpy(text, sel->text, sizeof text - 1);
-        text[sizeof text - 1] = '\0';
-        cursor = strlen(text);
-        break;
     }
-
 draw:
     drawmenu();
 }
